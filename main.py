@@ -59,11 +59,11 @@ def main_game():
 
     upper_pipes = [
         {'x': SCREENWIDTH + 200, 'y': new_pipe_1[0]['y']},
-        {'x': SCREENWIDTH + 200 + (SCREENWIDTH/2), 'y': new_pipe_1[1]['y']},
+        {'x': SCREENWIDTH + 200 + (SCREENWIDTH/2), 'y': new_pipe_2[0]['y']},
     ]
 
     lower_pipes = [
-        {'x': SCREENWIDTH + 200, 'y': new_pipe_2[0]['y']},
+        {'x': SCREENWIDTH + 200, 'y': new_pipe_1[1]['y']},
         {'x': SCREENWIDTH + 200 + (SCREENWIDTH/2), 'y': new_pipe_2[1]['y']},
     ]
 
@@ -91,70 +91,88 @@ def main_game():
                     GAME_SOUNDS['wing'].play()
 
     
-    crash_test = is_collide(playerx, playery, upper_pipes, lower_pipes)
+        crash_test = is_collide(playerx, playery, upper_pipes, lower_pipes)
 
-    if crash_test:
-        return
+        if crash_test:
+            return
     
-    player_mid_pos = playerx + GAME_SPRITES['player'].get_width()/2
+        player_mid_pos = playerx + GAME_SPRITES['player'].get_width()/2
+        for pipe in upper_pipes:
+            pipe_mid_pos = pipe['x'] + GAME_SPRITES['pipe'][0].get_width()/2
+            if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
+                score += 1
+                print(f"Your Score is {score}")
+                GAME_SOUNDS['point'].play()
+
+
+        
+        if player_vel_y < player_max_vel_y and not player_flapped:
+            player_vel_y += player_acc_y
+
+        if player_flapped:
+            player_flapped = False
+
+        player_height = GAME_SPRITES['player'].get_height()
+        playery = playery + min(player_vel_y, GROUNDY - playery - player_height)
+
+
+        for upperPipe, lowerPipe in zip(upper_pipes, lower_pipes):
+            upperPipe['x'] += pipe_vel_x
+            lowerPipe['x'] += pipe_vel_x
+
+        if 0 < upper_pipes[0]['x'] < 5:
+            new_pipe = get_random_pipe()
+            upper_pipes.append(new_pipe[0])
+            lower_pipes.append(new_pipe[1])
+
+
+
+        if upper_pipes[0]['x'] < -GAME_SPRITES['pipe'][0].get_width():
+            upper_pipes.pop(0)
+            lower_pipes.pop(0)
+
+        
+        SCREEN.blit(GAME_SPRITES['background'], (0, 0))
+        for upperPipe, lowerPipe in zip(upper_pipes, lower_pipes):
+            SCREEN.blit(GAME_SPRITES['pipe'][0], (upperPipe['x'], upperPipe['y']))
+            SCREEN.blit(GAME_SPRITES['pipe'][1], (lowerPipe['x'], lowerPipe['y']))
+        
+        SCREEN.blit(GAME_SPRITES['base'], (basex, GROUNDY))
+        SCREEN.blit(GAME_SPRITES['player'], (playerx, playery))
+
+        my_digits = [int(x) for x in list(str(score))]
+        width = 0
+        for digit in my_digits:
+            width += GAME_SPRITES['numbers'][digit].get_width()
+        x_offset = (SCREENWIDTH - width)/2
+
+        for digit in my_digits:
+            SCREEN.blit(GAME_SPRITES['numbers'][digit], (x_offset, SCREENHEIGHT*0.12))
+            x_offset += GAME_SPRITES['numbers'][digit].get_width()
+
+        pygame.display.update()
+        FPSCLOCK.tick(FPS)
+
+
+def is_collide(playerx, playery, upper_pipes, lower_pipes):
+    if playery > GROUNDY - 25 or playery < 0:
+        GAME_SOUNDS['hit'].play()
+        return True
+
     for pipe in upper_pipes:
-        pipe_mid_pos = pipe['x'] + GAME_SPRITES['pipe'][0].get_width()/2
-        if pipe_mid_pos <= player_mid_pos < pipe_mid_pos + 4:
-            score += 1
-            print(f"Your Score is {score}")
-        GAME_SOUNDS['point'].play()
+        pipe_height = GAME_SPRITES['pipe'][0].get_height()
+        if (playery < pipe_height + pipe['y']) and (abs(playerx - pipe['x']) < GAME_SPRITES['pipe'][0].get_width()):
+            GAME_SOUNDS['hit'].play()
+            return True
 
-
-    
-    if player_vel_y < player_max_vel_y and not player_flapped:
-        player_vel_y += player_acc_y
-
-    if player_flapped:
-        player_flapped = False
-
-    player_height = GAME_SPRITES['player'].get_height()
-    playery = playery + min(player_vel_y, GROUNDY - playery - player_height)
-
-
-    for upperPipe, lowerPipe in zip(upper_pipes, lower_pipes):
-        upperPipe['x'] += pipe_vel_x
-        lowerPipe['x'] += pipe_vel_x
-
-    if 0 < upper_pipes[0]['x'] < 5:
-        new_pipe = get_random_pipe()
-        upper_pipes.append(new_pipe[0])
-        lower_pipes.append(new_pipe[1])
-
-
-
-    if upper_pipes[0]['x'] < -GAME_SPRITES['pipe'][0].get_width():
-        upper_pipes.pop(0)
-        lower_pipes.pop(0)
+    for pipe in lower_pipes:
+        
+        if (playery + GAME_SPRITES['player'].get_height() > pipe['y']) and (abs(playerx - pipe['x']) < GAME_SPRITES['pipe'][0].get_width()):
+            GAME_SOUNDS['hit'].play()
+            return True
 
     
-    SCREEN.blit(GAME_SPRITES['background'], (0, 0))
-    for upperPipe, lowerPipe in zip(upper_pipes, lower_pipes):
-        SCREEN.blit(GAME_SPRITES['pipe'][0], (upperPipe['x'], upperPipe['y']))
-        SCREEN.blit(GAME_SPRITES['pipe'][1], (lowerPipe['x'], lowerPipe['y']))
-    
-    SCREEN.blit(GAME_SPRITES['base'], (basex, GROUNDY))
-    SCREEN.blit(GAME_SPRITES['player'], (playerx, playery))
-
-    my_digits = [int(x) for x in list(str(score))]
-    width = 0
-    for digit in my_digits:
-        width += GAME_SPRITES['numbers'][digit].get_width()
-    x_offset = (SCREENWIDTH - width)/2
-
-    for digit in my_digits:
-        SCREEN.blit(GAME_SPRITES['numbers'][digit], (x_offset, SCREENHEIGHT*0.12))
-        x_offset += GAME_SPRITES['numbers'][digit].get_width()
-
-    pygame.display.update()
-    FPSCLOCK.tick(FPS)
-
-
-
+    return False
 
 
 
